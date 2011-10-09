@@ -8,4 +8,9 @@ light-switcher: light-switcher.c
 microphone-monitor: microphone-monitor.cpp
 	clang++ \
 	  -g -O2 -framework AudioUnit  -o $@ $< \
-	  -framework Carbon -framework CoreAudio
+	  -I/Library/Frameworks/Phidget21.framework/Headers \
+	  -I/opt/local/include \
+	  -Wno-deprecated-declarations \
+	  -framework Carbon -framework CoreAudio \
+	  -framework Phidget21 \
+	  -L/opt/local/lib -laubio
