@@ -1,7 +1,17 @@
+#include <math.h>
+#include <signal.h>
 #include <stdio.h>
-#include <phidget21.h>
-#include <unistd.h>
 #include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+#include <phidget21.h>
+
+static double get_time_in_seconds(void) {
+  struct timeval t;
+  gettimeofday(&t, NULL);
+  return (double) t.tv_sec + t.tv_usec * 1.e-6;
+}
 
 int attach_handler(CPhidgetHandle IFK, void *data) {
   int serialNo;
@@ -33,7 +43,15 @@ int error_handler(CPhidgetHandle IFK, void *userptr, int ErrorCode,
   return 0;
 }
 
+int please_exit = 0;
+void catch_sigint(int signal) {
+  please_exit = 1;
+}
+
 int main(int argc, char* argv[]) {
+  // Set up a SIGINT handler.
+  signal(SIGINT, catch_sigint);
+
   // Create the InterfaceKit object.
   CPhidgetInterfaceKitHandle ifKit = 0;
   CPhidgetInterfaceKit_create(&ifKit);
@@ -71,12 +89,17 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  for (unsigned i = 0; i != 10000000; ++i) {
-    CPhidgetInterfaceKit_setOutputState(ifKit, 0, (i % 200) < 100);
-    CPhidgetInterfaceKit_setOutputState(ifKit, 2, (i % 200) >= 100);
-    usleep(10000);
+  while (1) {
+    double time = get_time_in_seconds();
+    double factor = 1;
+    int l0_state = fmod(time * factor, 20) < 10;
+    int l1_state = fmod(time * factor, 20) >= 10;
+    CPhidgetInterfaceKit_setOutputState(ifKit, 0, l0_state);
+    CPhidgetInterfaceKit_setOutputState(ifKit, 2, l1_state);
+    usleep(100000);
   }
 
+  fprintf(stderr, "shutting down...\n");
   CPhidget_close((CPhidgetHandle)ifKit);
   CPhidget_delete((CPhidgetHandle)ifKit);
 
