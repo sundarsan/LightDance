@@ -70,8 +70,8 @@ public:
   MusicMonitor(bool switch_lights_) : switch_lights(switch_lights_) {
     /* Create the Aubio objects. */
     int channels = 1;
-    od_threshold = .9;
-    od_silence = -50.0;
+    od_threshold = .7;
+    od_silence = -70.0;
     od_samplerate = 44100;
     od_overlap_size = 256;
     od_buffer_size = 512;
@@ -461,7 +461,7 @@ int main() {
   Recorder.Configure();
 
   Recorder.Start();
-  sleep(1000);
+  sleep(2 * 60 * 60);
   Recorder.Stop();
 
   return 0;
