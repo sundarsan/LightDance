@@ -13,4 +13,7 @@ public:
 
 LightController *CreatePhidgetLightController();
 
+LightController *CreateChainedLightController(LightController *a,
+                                              LightController *b);
+
 #endif // LIGHTCONTROLLER_H

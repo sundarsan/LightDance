@@ -7,7 +7,8 @@ CPPFLAGS := \
 	-I/opt/local/include \
 
 MICROPHONE_OBJS := microphone-monitor.o \
-	AudioMonitor.o MusicMonitor.o LightController.o
+	AudioMonitor.o MusicMonitor.o LightController.o \
+	SimLightController.o
 
 all: light-switcher microphone-monitor
 
@@ -22,7 +23,8 @@ microphone-monitor: $(MICROPHONE_OBJS)
 	  -Wno-deprecated-declarations \
 	  -framework Carbon -framework CoreAudio \
 	  -framework Phidget21 \
-	  -L/opt/local/lib -laubio
+	  -L/opt/local/lib -laubio \
+	  -framework OpenGL -framework GLUT
 
 %.o: %.cpp Makefile
 	$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)

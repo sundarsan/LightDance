@@ -88,9 +88,32 @@ public:
     CPhidgetInterfaceKit_setOutputState(ifKit, Index, Enable);
   }
 };
+
+class ChainedLightController : public LightController {
+  LightController *a, *b;
+
+public:
+  ChainedLightController(LightController *a_, LightController *b_)
+    : a(a_), b(b_) {}
+  ~ChainedLightController() {
+    delete a;
+    delete b;
+  }
+
+  virtual void SetLight(unsigned Index, bool Enable) {
+    a->SetLight(Index, Enable);
+    b->SetLight(Index, Enable);
+  }
 };
+
+}
 
 LightController *CreatePhidgetLightController() {
   return new PhidgetLightController();
+}
+
+LightController *CreateChainedLightController(LightController *a,
+                                              LightController *b) {
+  return new ChainedLightController(a, b);
 }
 
