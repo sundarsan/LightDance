@@ -6,7 +6,8 @@ CPPFLAGS := \
 	-I/Library/Frameworks/Phidget21.framework/Headers \
 	-I/opt/local/include \
 
-MICROPHONE_OBJS := microphone-monitor.o AudioMonitor.o MusicMonitor.o
+MICROPHONE_OBJS := microphone-monitor.o \
+	AudioMonitor.o MusicMonitor.o LightController.o
 
 all: light-switcher microphone-monitor
 
