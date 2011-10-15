@@ -16,6 +16,8 @@ AudioMonitorHandler::~AudioMonitorHandler() {}
 AudioMonitor::AudioMonitor() {}
 AudioMonitor::~AudioMonitor() {}
 
+namespace {
+
 class OSXAudioMonitor : public AudioMonitor {
   AudioMonitorHandler *handler;
   bool is_configured;
@@ -52,6 +54,8 @@ protected:
   FSRef fOutputDirectory;
 
 };
+
+}
 
 AudioMonitor *CreateOSXAudioMonitor(AudioMonitorHandler *handler) {
   return new OSXAudioMonitor(handler);
