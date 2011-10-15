@@ -1,0 +1,7 @@
+*~
+*.o
+*.dSYM
+aubio-0.3.2
+aubio-0.3.2.tar
+fftw-3.3
+fftw-3.3.tar.gz
