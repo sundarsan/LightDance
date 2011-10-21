@@ -30,6 +30,9 @@ class GLUTSimLightController : public SimLightController {
   }
 
   bool lights_enabled[4];
+  double last_beat_time;
+  bool beat_monitor;
+  unsigned beat_draw_count;
 
 public:
   GLUTSimLightController() : lights_enabled() {
@@ -37,6 +40,9 @@ public:
     char *argv = 0;
 
     the_controller = this;
+    last_beat_time = -1;
+    beat_monitor = false;
+    beat_draw_count = 0;
 
     glutInit(&argc, &argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -54,7 +60,14 @@ public:
     // redisplay. We just draw in a loop, to solve this.
     lights_enabled[Index] = Enable;
   }
-  
+
+  virtual void BeatNotification(unsigned Index, double Time) {
+    // FIXME: We really want to use Time here, but we need to transform that to
+    // be roughly in wall time.
+    beat_monitor = true;
+    beat_draw_count = 0;
+  }
+
   virtual void MainLoop() {
     glutMainLoop();
   }
@@ -131,6 +144,13 @@ void GLUTSimLightController::draw() {
       glColor3fv(l.color);
       draw_circle_filled(l.position[0], l.position[1], l.radius);
     }
+  }
+
+  // Draw the beat monitor.
+  if (beat_monitor && beat_draw_count < 4) {
+    glColor3f(1, 1, 1);
+    glRectf(-1, -.9, -.8, -.8);
+    ++beat_draw_count;
   }
 
   glFlush();

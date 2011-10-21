@@ -8,6 +8,8 @@ public:
   LightController();
   virtual ~LightController();
 
+  virtual void BeatNotification(unsigned Index, double Time) = 0;
+
   virtual void SetLight(unsigned Index, bool Enable) = 0;
 };
 

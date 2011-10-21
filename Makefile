@@ -8,7 +8,7 @@ CPPFLAGS := \
 
 MICROPHONE_OBJS := microphone-monitor.o \
 	AudioMonitor.o MusicMonitor.o LightController.o \
-	SimLightController.o
+	SimLightController.o Util.o
 
 all: light-switcher microphone-monitor
 

@@ -5,15 +5,10 @@
 
 #include "AudioMonitor.h"
 #include "MusicMonitor.h"
-#include "LightController.h"
+#include "SimLightController.h"
+#include "Util.h"
 
 ///
-
-static double get_time_in_seconds(void) {
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  return (double) t.tv_sec + t.tv_usec * 1.e-6;
-}
 
 class LoggingAudioHandler : public AudioMonitorHandler {
 public:
@@ -41,7 +36,9 @@ class SimpleLightSwitcher : public MusicMonitorHandler {;
   double last_change_time;
 
 public:
-  SimpleLightSwitcher() : controller(CreatePhidgetLightController()) {
+  SimpleLightSwitcher(LightController *controller_)
+    : controller(controller_)
+  {
     which_light = 0;
     last_change_time = -1;
   }
@@ -50,6 +47,8 @@ public:
   }
 
   virtual void HandleBeat(BeatKind kind, double time) {
+    controller->BeatNotification(kind, time);
+
     fprintf(stderr, "BeatKind: %d, %.4fs\n", kind, time);
     if (time - last_change_time > 0.01) {
       last_change_time = time;
@@ -63,13 +62,22 @@ public:
 };
 
 int main() {
-  //MusicMonitorHandler *MMH = new SimpleLightSwitcher;
-  MusicMonitorHandler *MMH = new LoggingMusicHandler;
+  SimLightController *SLC = CreateSimLightController();
+  LightController *controller = SLC;
+
+  if (0)
+    controller = CreateChainedLightController(SLC,
+                                              CreatePhidgetLightController());
+
+  MusicMonitorHandler *MMH = new SimpleLightSwitcher(controller);
   MusicMonitor *MM = CreateAubioMusicMonitor(MMH);
   AudioMonitor *AM = CreateOSXAudioMonitor(MM);
 
   AM->Start();
-  sleep(2 * 60 * 60);
+
+  //  sleep(2 * 60 * 60);
+  SLC->MainLoop();
+
   AM->Stop();
 
   delete AM;

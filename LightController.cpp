@@ -84,6 +84,9 @@ public:
   ~PhidgetLightController() {
   }
 
+  virtual void BeatNotification(unsigned Index, double Time) {
+  }
+
   virtual void SetLight(unsigned Index, bool Enable) {
     CPhidgetInterfaceKit_setOutputState(ifKit, Index, Enable);
   }
@@ -98,6 +101,11 @@ public:
   ~ChainedLightController() {
     delete a;
     delete b;
+  }
+
+  virtual void BeatNotification(unsigned Index, double Time) {
+    a->BeatNotification(Index, Time);
+    b->BeatNotification(Index, Time);
   }
 
   virtual void SetLight(unsigned Index, bool Enable) {
