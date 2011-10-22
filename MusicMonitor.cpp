@@ -3,6 +3,7 @@
 #include <aubio/aubio.h>
 
 #include "MusicMonitor.h"
+#include "Util.h"
 
 MusicMonitorHandler::MusicMonitorHandler() {}
 MusicMonitorHandler::~MusicMonitorHandler() {}
@@ -50,6 +51,7 @@ public:
     od_o = new_aubio_onsetdetection(od_type_onset, od_buffer_size, channels);
     od_o2 = new_aubio_onsetdetection(od_type_onset2, od_buffer_size, channels);
     od_bufferpos = 0;
+    od_nframes = 0;
   }
 
   virtual ~AubioMusicMonitor() {
@@ -57,13 +59,15 @@ public:
   }
 
   virtual void HandleSample(double time, double left, double right) {
+    static double start_time = get_elapsed_time_in_seconds();
+
     fvec_write_sample(od_ibuf, (left + right)*.5, 0, od_bufferpos++);
     ++od_nframes;
 
     if (od_bufferpos != od_overlap_size)
       return;
 
-    double frame_time = (double) od_nframes / od_samplerate;
+    double frame_time = start_time + (double) od_nframes / od_samplerate;
     aubio_pvoc_do(od_pv, od_ibuf, od_fftgrain);
     aubio_onsetdetection(od_o, od_fftgrain, od_onset);
     if (true) {
@@ -71,7 +75,9 @@ public:
       od_onset->data[0][0] *= od_onset2->data[0][0];
     }
     if (aubio_peakpick_pimrt(od_onset, od_parms)) {
+#ifdef DEBUG      
       fprintf(stderr, "od_onset: %.4fs\n", (float) od_onset->data[0][0]);
+#endif
       if (aubio_silence_detection(od_ibuf, od_silence) == 1) {
         ;
       } else {
