@@ -61,11 +61,24 @@ public:
   }
 };
 
-int main() {
+int main(int argc, char **argv) {
+  bool SwitchLights = false;
+
+  for (int i = 1; i != argc; ++i) {
+    std::string arg = argv[i];
+
+    if (arg == "--switch-lights") {
+      SwitchLights = true;
+    } else {
+      fprintf(stderr, "%s: unknown argument: %s\n", argv[0], arg.c_str());
+      return 1;
+    }
+  }
+
   SimLightController *SLC = CreateSimLightController();
   LightController *controller = SLC;
 
-  if (0)
+  if (SwitchLights)
     controller = CreateChainedLightController(SLC,
                                               CreatePhidgetLightController());
 
