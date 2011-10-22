@@ -6,6 +6,7 @@
 #include <GLUT/glut.h>
 
 #include "SimLightController.h"
+#include "Util.h"
 
 namespace {
 class GLUTSimLightController : public SimLightController {
@@ -31,8 +32,7 @@ class GLUTSimLightController : public SimLightController {
 
   bool lights_enabled[4];
   double last_beat_time;
-  bool beat_monitor;
-  unsigned beat_draw_count;
+  unsigned num_frames;
 
 public:
   GLUTSimLightController() : lights_enabled() {
@@ -41,8 +41,7 @@ public:
 
     the_controller = this;
     last_beat_time = -1;
-    beat_monitor = false;
-    beat_draw_count = 0;
+    num_frames = 0;
 
     glutInit(&argc, &argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -62,10 +61,7 @@ public:
   }
 
   virtual void BeatNotification(unsigned Index, double Time) {
-    // FIXME: We really want to use Time here, but we need to transform that to
-    // be roughly in wall time.
-    beat_monitor = true;
-    beat_draw_count = 0;
+    last_beat_time = Time;
   }
 
   virtual void MainLoop() {
@@ -75,6 +71,8 @@ public:
 }
 
 GLUTSimLightController *GLUTSimLightController::the_controller = 0;
+
+namespace {
 
 void draw_circle_filled(float cx, float cy, float radius,
                         unsigned N = 32) {
@@ -89,9 +87,18 @@ void draw_circle_filled(float cx, float cy, float radius,
   glEnd();
 }
 
+void glutDrawString(float x, float y, char *string) {
+  char c;
+
+  glRasterPos2f(x, y);
+  while ((c = *string++)) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, c);
+}
+
+}
+
 void GLUTSimLightController::idle() {
   static int count = 0;
-  if ((++count % 64) == 0)
+  if ((++count % 2) == 0)
     glutPostRedisplay();
 }
 
@@ -147,10 +154,37 @@ void GLUTSimLightController::draw() {
   }
 
   // Draw the beat monitor.
-  if (beat_monitor && beat_draw_count < 4) {
-    glColor3f(1, 1, 1);
+  double elapsed = get_elapsed_time_in_seconds();
+  if (elapsed - last_beat_time <= .1) {
+    double v = 1 - (elapsed - last_beat_time) / .1;
+    glColor3f(v, v, v);
     glRectf(-1, -.9, -.8, -.8);
-    ++beat_draw_count;
+  }
+
+  // Draw the 2D overlays.
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glOrtho(0, w, 0, h, -1, 1);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  const int textHeight = 15;
+  char buffer[256];
+  int y = 0;
+  sprintf(buffer, "Time: %.4fs\n", elapsed);
+  glColor3f(1, 1, 1);
+  glutDrawString(10, 10 + textHeight*y++, buffer);
+
+  if (false) {
+    num_frames++;
+    double fps = num_frames / elapsed;
+    sprintf(buffer, "FPS: %.4fs\n", fps);
+    glColor3f(1, 1, 1);
+    glutDrawString(10, 10 + textHeight*y++, buffer);
   }
 
   glFlush();

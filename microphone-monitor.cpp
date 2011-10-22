@@ -2,6 +2,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <string.h>
+#include <string>
 
 #include "AudioMonitor.h"
 #include "MusicMonitor.h"
