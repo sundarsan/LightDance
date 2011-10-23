@@ -304,6 +304,37 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.push_back(P0);
   Programs.push_back(P1);
   Result.push_back(new LightProgramImpl("alternating program", 180, Programs));
+
+  // Create a slightly more complex toggle program, that leaves one light one
+  // while toggling the other, then switches.
+  P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(true));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  Result.push_back(new LightProgramImpl("long alternating program", 180,
+                                        Programs));
 }
 
 
