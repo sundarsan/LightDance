@@ -81,6 +81,8 @@ namespace {
 
       // Otherwise, if there is no active program, select one.
       if (!ActiveProgram) {
+        ChangeProgramRequested = false;
+
         ActiveProgram = AvailablePrograms[lrand48() % AvailablePrograms.size()];
         ActiveProgram->Start(*this);
 
