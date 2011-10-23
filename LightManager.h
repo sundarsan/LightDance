@@ -11,6 +11,12 @@ class LightController;
 class LightProgram;
 class MusicMonitorHandler;
 
+struct LightState {
+  bool Enabled;
+  double TotalEnabledTime;
+  double LastEnableTime;
+};
+
 class LightManager : public MusicMonitorHandler {
 protected:
   LightManager();
@@ -24,6 +30,8 @@ public:
   virtual void HandleBeat(MusicMonitorHandler::BeatKind Kind, double time) = 0;
 
   virtual void SetLight(unsigned Index, bool Enable) = 0;
+
+  virtual const LightState &GetLightState(unsigned Index) const = 0;
 };
 
 LightManager *CreateLightManager(LightController *Controller,

@@ -3,6 +3,7 @@
 #include "LightController.h"
 #include "LightInfo.h"
 #include "LightProgram.h"
+#include "Util.h"
 
 #include <cassert>
 #include <cstdio>
@@ -16,6 +17,7 @@ namespace {
     std::vector<LightInfo> LightSetup;
 
     std::vector<LightProgram *> AvailablePrograms;
+    std::vector<LightState> LightStates;
     LightProgram *ActiveProgram;
     bool ChangeProgramRequested;
 
@@ -26,7 +28,7 @@ namespace {
     virtual const std::vector<LightInfo> &GetSetup() const {
       return LightSetup;
     }
-    
+
   public:
     LightManagerImpl(LightController *Controller_,
                      std::vector<LightInfo> LightSetup_)
@@ -50,8 +52,9 @@ namespace {
           delete LP;
         }
       }
-        
-      // FIXME: 
+
+      for (unsigned i = 0, e = LightSetup.size(); i != e; ++i)
+        LightStates.push_back(LightState());
     }
 
     ~LightManagerImpl() {
@@ -73,7 +76,25 @@ namespace {
     }
 
     virtual void SetLight(unsigned Index, bool Enable) {
-      Controller->SetLight(Index, Enable);
+      assert(Index < LightStates.size() && "Invalid index");
+      Controller->SetLight(LightSetup[Index].Index, Enable);
+
+      LightState &State = LightStates[Index];
+      if (Enable != State.Enabled) {
+        double Elapsed = get_elapsed_time_in_seconds();
+
+        State.Enabled = Enable;
+        if (Enable) {
+          State.LastEnableTime = Elapsed;
+        } else {
+          State.TotalEnabledTime += Elapsed - State.LastEnableTime;
+        }
+      }
+    }
+
+    virtual const LightState &GetLightState(unsigned Index) const {
+      assert(Index < LightStates.size() && "Invalid index");
+      return LightStates[Index];
     }
 
     void MaybeSwitchPrograms() {

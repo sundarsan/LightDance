@@ -149,7 +149,7 @@ namespace {
 
       // FIXME: Create a random light assignment.
       ActiveAssignments.push_back(0);
-      ActiveAssignments.push_back(2);
+      ActiveAssignments.push_back(1);
     }
     virtual void Stop() {
       ActiveManager = 0;
