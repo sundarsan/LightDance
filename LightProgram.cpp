@@ -56,12 +56,13 @@ namespace {
 
   class ChannelProgram {
     LightProgramImpl *ActiveProgram;
+    unsigned ActiveLightIndex;
 
     std::vector<ChannelAction *> Actions;
     unsigned Position;
 
   public:
-    ChannelProgram() : ActiveProgram(0), Position(0) {}
+    ChannelProgram() : ActiveProgram(0), ActiveLightIndex(0), Position(0) {}
 
     ~ChannelProgram() {
       while (!Actions.empty()) {
@@ -75,10 +76,13 @@ namespace {
       return *ActiveProgram;
     }
 
+    LightManager &GetManager();
+
     std::vector<ChannelAction*> GetActions() { return Actions; }
 
-    void Start(LightProgramImpl &Program) {
+    void Start(unsigned LightIndex, LightProgramImpl &Program) {
       ActiveProgram = &Program;
+      ActiveLightIndex = LightIndex;
       
       Position = 0;
       for (unsigned i = 0, e = Actions.size(); i != e; ++i)
@@ -102,6 +106,14 @@ namespace {
       // Update the position.
       Position = NewPosition;
       Actions[Position]->Start();
+    }
+
+    const LightState &GetLightState() {
+      return GetManager().GetLightState(ActiveLightIndex);
+    }
+
+    void SetLight(bool Enable) {
+      return GetManager().SetLight(ActiveLightIndex, Enable);
     }
   };
 
@@ -190,6 +202,10 @@ namespace {
 
 LightProgram::LightProgram() {}
 LightProgram::~LightProgram() {}
+
+LightManager &ChannelProgram::GetManager() {
+  return GetProgram().GetManager();
+}
 
 void ChannelProgram::Step(MusicMonitorHandler::BeatKind Kind) {
   // Execute program actions in a loop.
