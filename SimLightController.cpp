@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <OpenGL/OpenGL.h>
 #include <GLUT/glut.h>
@@ -55,13 +56,12 @@ public:
   }
 
   virtual void SetLight(unsigned Index, bool Enable) {
-    // FIXME: Irritatingly, we are on the wrong thread here to post a
-    // redisplay. We just draw in a loop, to solve this.
     lights_enabled[Index] = Enable;
   }
 
   virtual void BeatNotification(unsigned Index, double Time) {
-    last_beat_time = Time;
+    // FIXME: It is not reliable to use the time here.
+    last_beat_time = get_elapsed_time_in_seconds();
   }
 
   virtual void MainLoop() {
@@ -97,9 +97,8 @@ void glutDrawString(float x, float y, char *string) {
 }
 
 void GLUTSimLightController::idle() {
-  static int count = 0;
-  if ((++count % 2) == 0)
-    glutPostRedisplay();
+  usleep(2000);
+  glutPostRedisplay();
 }
 
 void GLUTSimLightController::draw() {
@@ -154,11 +153,12 @@ void GLUTSimLightController::draw() {
   }
 
   // Draw the beat monitor.
+  const double beat_monitor_dim_time = .05;
   double elapsed = get_elapsed_time_in_seconds();
-  if (elapsed - last_beat_time <= .1) {
-    double v = 1 - (elapsed - last_beat_time) / .1;
+  if (elapsed - last_beat_time <= beat_monitor_dim_time) {
+    double v = 1 - (elapsed - last_beat_time) / beat_monitor_dim_time;
     glColor3f(v, v, v);
-    glRectf(-1, -.9, -.8, -.8);
+    glRectf(-.9, -.9, -.7, -.8);
   }
 
   // Draw the 2D overlays.
@@ -179,7 +179,7 @@ void GLUTSimLightController::draw() {
   glColor3f(1, 1, 1);
   glutDrawString(10, 10 + textHeight*y++, buffer);
 
-  if (false) {
+  if (true) {
     num_frames++;
     double fps = num_frames / elapsed;
     sprintf(buffer, "FPS: %.4fs\n", fps);
