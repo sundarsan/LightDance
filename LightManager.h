@@ -17,13 +17,13 @@ protected:
 public:
   virtual ~LightManager();
 
-  virtual LightController &GetController() const = 0;
-
   virtual const std::vector<LightInfo> &GetSetup() const = 0;
 
   virtual void ChangePrograms() = 0;
 
   virtual void HandleBeat(MusicMonitorHandler::BeatKind Kind, double time) = 0;
+
+  virtual void SetLight(unsigned Index, bool Enable) = 0;
 };
 
 LightManager *CreateLightManager(LightController *Controller,

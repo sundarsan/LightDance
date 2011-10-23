@@ -72,6 +72,10 @@ namespace {
       ActiveProgram->HandleBeat(Kind, Time);
     }
 
+    virtual void SetLight(unsigned Index, bool Enable) {
+      Controller->SetLight(Index, Enable);
+    }
+
     void MaybeSwitchPrograms() {
       // If a change was requested, stop the current program.
       if (ChangeProgramRequested && ActiveProgram) {

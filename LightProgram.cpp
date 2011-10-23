@@ -1,6 +1,5 @@
 #include "LightProgram.h"
 
-#include "LightController.h"
 #include "LightManager.h"
 #include "Util.h"
 
@@ -162,10 +161,6 @@ namespace {
       return *ActiveManager;
     }
 
-    LightController &GetController() const {
-      return GetManager().GetController();
-    }
-
     void SetChannel(unsigned ChannelIndex, bool Enable) {
       assert(ChannelIndex < ActiveAssignments.size() &&
              "Invalid channel index");
@@ -173,7 +168,7 @@ namespace {
       if (LightIndex == -1)
         return;
 
-      GetController().SetLight(LightIndex, Enable);
+      GetManager().SetLight(LightIndex, Enable);
     }
 
     virtual void HandleBeat(MusicMonitorHandler::BeatKind Kind, double time) {
@@ -228,6 +223,17 @@ void ChannelProgram::Step(MusicMonitorHandler::BeatKind Kind) {
     }
   }
 }
+
+/*
+ * Channel Actions
+ */
+
+namespace {
+  class ToggleLightAction : public ChannelAction {
+  };
+}
+
+///
 
 void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Result.push_back(new LightProgramImpl("default program", 3));
