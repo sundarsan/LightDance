@@ -1,6 +1,6 @@
 CC := clang
 CFLAGS := \
-	-flto -O2 -Wall -Wextra \
+	-g -O2 -Wall -Wextra \
 	-Wno-unused-parameter -Wno-deprecated-declarations -Wno-unused-function
 CPPFLAGS := \
 	-I/Library/Frameworks/Phidget21.framework/Headers \

@@ -15,7 +15,8 @@ namespace {
     struct ActionResult {
     public:
       enum ResultKind {
-        Stop,
+        Retry,
+        Advance,
         Next,
         Goto,
         SwitchPrograms
@@ -29,8 +30,11 @@ namespace {
       }
 
     public:
-      static ActionResult MakeStop() {
-        return Make(Stop);
+      static ActionResult MakeRetry() {
+        return Make(Retry);
+      }
+      static ActionResult MakeAdvance() {
+        return Make(Advance);
       }
       static ActionResult MakeNext() {
         return Make(Next);
@@ -78,9 +82,11 @@ namespace {
 
     LightManager &GetManager();
 
-    std::vector<ChannelAction*> GetActions() { return Actions; }
+    std::vector<ChannelAction*> &GetActions() { return Actions; }
 
     void Start(unsigned LightIndex, LightProgramImpl &Program) {
+      assert(!Actions.empty() && "Channel program has no actions!");
+
       ActiveProgram = &Program;
       ActiveLightIndex = LightIndex;
       
@@ -121,6 +127,7 @@ namespace {
     LightManager *ActiveManager;
     std::vector<int> ActiveAssignments;
     double ActiveStartTime;
+    double ActiveBeatElapsed;
 
     /// The program name.
     std::string Name;
@@ -129,18 +136,19 @@ namespace {
     /// manager switch programs.
     double MaxProgramTime;
 
-    int which_light;
-    double last_change_time;
+    /// The program to run for each light channel.
+    std::vector<ChannelProgram *> ChannelPrograms;
 
   public:
-    LightProgramImpl(std::string Name_, double MaxProgramTime_)
+    LightProgramImpl(std::string Name_, double MaxProgramTime_,
+                     std::vector<ChannelProgram *> ChannelPrograms_)
       : ActiveManager(0),
         ActiveStartTime(-1),
+        ActiveBeatElapsed(-1),
         Name(Name_),
-        MaxProgramTime(MaxProgramTime_)
+        MaxProgramTime(MaxProgramTime_),
+        ChannelPrograms(ChannelPrograms_)
     {
-      which_light = 0;
-      last_change_time = -1;
     }
 
     virtual bool WorksWithSetup(const std::vector<LightInfo> &Lights) const {
@@ -158,14 +166,27 @@ namespace {
 
       ActiveManager = &Manager;
       ActiveStartTime = get_elapsed_time_in_seconds();
+      ActiveBeatElapsed = -1;
 
       // FIXME: Create a random light assignment.
       ActiveAssignments.push_back(0);
       ActiveAssignments.push_back(1);
+
+      for (unsigned i = 0, e = ChannelPrograms.size(); i != e; ++i) {
+        ChannelPrograms[i]->Start(ActiveAssignments[i], *this);
+      }
     }
     virtual void Stop() {
+      for (unsigned i = 0, e = ChannelPrograms.size(); i != e; ++i) {
+        ChannelPrograms[i]->Stop();
+      }
+
       ActiveManager = 0;
       ActiveAssignments.clear();
+    }
+
+    double GetActiveBeatElapsed() const {
+      return ActiveBeatElapsed;
     }
 
     LightManager &GetManager() const {
@@ -186,15 +207,17 @@ namespace {
     virtual void HandleBeat(MusicMonitorHandler::BeatKind Kind, double time) {
       double Elapsed = get_elapsed_time_in_seconds() - ActiveStartTime;
 
-      if (time - last_change_time > 0.01) {
-        last_change_time = time;
-        which_light = !which_light;
+      // For now, we globally filter out beats that are too fast. I haven't
+      // figured out a better place to incorporate this yet.
+      if (Elapsed - ActiveBeatElapsed < .01)
+        return;
 
-        SetChannel(0, which_light == 0);
-        SetChannel(1, which_light == 1);
-      }
+      ActiveBeatElapsed = Elapsed;
 
-      if (Elapsed > MaxProgramTime)
+      for (unsigned i = 0, e = ChannelPrograms.size(); i != e; ++i)
+        ChannelPrograms[i]->Step(Kind);
+
+      if (ActiveBeatElapsed > MaxProgramTime)
         GetManager().ChangePrograms();
     }
   };
@@ -218,13 +241,18 @@ void ChannelProgram::Step(MusicMonitorHandler::BeatKind Kind) {
 
     // Handle the result.
     switch (Result.Kind) {
-    case ChannelAction::ActionResult::Stop:
-      // We are done.
+    case ChannelAction::ActionResult::Retry:
+      // We are done, we will restart with this action.
       return;
 
+    case ChannelAction::ActionResult::Advance:
     case ChannelAction::ActionResult::Next:
       // Goto the next action, or restart if at the end.
       GotoPosition((Position + 1) % Actions.size());
+
+      // If this was an advance action, we are done.
+      if (Result.Kind == ChannelAction::ActionResult::Advance)
+        return;
       break;
 
     case ChannelAction::ActionResult::Goto:
@@ -245,14 +273,37 @@ void ChannelProgram::Step(MusicMonitorHandler::BeatKind Kind) {
  */
 
 namespace {
-  class ToggleLightAction : public ChannelAction {
+  class SetLightAction : public ChannelAction {
+    bool Enable;
+
+  public:
+    SetLightAction(bool Enable_) : Enable(Enable_) {}
+
+    virtual ActionResult Step(MusicMonitorHandler::BeatKind Kind,
+                              ChannelProgram &Program) {
+      Program.SetLight(Enable);
+      return ActionResult::MakeAdvance();
+    }
   };
 }
 
 ///
 
 void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
-  Result.push_back(new LightProgramImpl("default program", 3));
+  std::vector<ChannelProgram *> Programs;
+
+  // Create a simple toggle program, by making alternating channels.
+  ChannelProgram *P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new SetLightAction(true));
+  ChannelProgram *P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(false));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  Result.push_back(new LightProgramImpl("alternating program", 180, Programs));
 }
 
 
