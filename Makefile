@@ -1,6 +1,6 @@
 CC := clang
 CFLAGS := \
-	-g -O2 -Wall -Wextra \
+	-flto -O2 -Wall -Wextra \
 	-Wno-unused-parameter -Wno-deprecated-declarations -Wno-unused-function
 CPPFLAGS := \
 	-I/Library/Frameworks/Phidget21.framework/Headers \
@@ -8,6 +8,7 @@ CPPFLAGS := \
 
 MICROPHONE_OBJS := microphone-monitor.o \
 	AudioMonitor.o MusicMonitor.o LightController.o \
+	LightManager.o LightProgram.o \
 	SimLightController.o Util.o
 
 all: light-switcher microphone-monitor
