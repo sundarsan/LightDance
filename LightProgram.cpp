@@ -52,7 +52,7 @@ namespace {
 
     virtual void Start() {};
 
-    virtual void Initialize() {};
+    virtual void Initialize(ChannelProgram &Program) {};
 
     virtual ActionResult Step(MusicMonitorHandler::BeatKind Kind,
                               ChannelProgram &Program) = 0;
@@ -92,11 +92,15 @@ namespace {
       
       Position = 0;
       for (unsigned i = 0, e = Actions.size(); i != e; ++i)
-        Actions[i]->Initialize();
+        Actions[i]->Initialize(*this);
       Actions[0]->Start();
     }
     void Stop() {
       ActiveProgram = 0;
+    }
+
+    unsigned GetPosition() {
+      return Position;
     }
 
     void Step(MusicMonitorHandler::BeatKind Kind);
@@ -105,8 +109,8 @@ namespace {
       assert(NewPosition < Actions.size() && "Invalid position!");
 
       // If we are jumping backwards, reinitialize all the actions in between.
-      for (unsigned i = NewPosition + 1, e = Position + 1; i < e; ++i) {
-        Actions[i]->Initialize();
+      for (unsigned i = NewPosition + 1, e = Position; i < e; ++i) {
+        Actions[i]->Initialize(*this);
       }
 
       // Update the position.
@@ -168,9 +172,10 @@ namespace {
       ActiveStartTime = get_elapsed_time_in_seconds();
       ActiveBeatElapsed = -1;
 
-      // FIXME: Create a random light assignment.
-      ActiveAssignments.push_back(0);
-      ActiveAssignments.push_back(1);
+      // FIXME: Create random assignments properly.
+      unsigned FirstLight = drand48() < .5;
+      ActiveAssignments.push_back(FirstLight);
+      ActiveAssignments.push_back(1 - FirstLight);
 
       for (unsigned i = 0, e = ChannelPrograms.size(); i != e; ++i) {
         ChannelPrograms[i]->Start(ActiveAssignments[i], *this);
@@ -209,7 +214,7 @@ namespace {
 
       // For now, we globally filter out beats that are too fast. I haven't
       // figured out a better place to incorporate this yet.
-      if (Elapsed - ActiveBeatElapsed < .01)
+      if (Elapsed - ActiveBeatElapsed < .03)
         return;
 
       ActiveBeatElapsed = Elapsed;
@@ -247,8 +252,11 @@ void ChannelProgram::Step(MusicMonitorHandler::BeatKind Kind) {
 
     case ChannelAction::ActionResult::Advance:
     case ChannelAction::ActionResult::Next:
-      // Goto the next action, or restart if at the end.
-      GotoPosition((Position + 1) % Actions.size());
+      // Goto the next action, or restart if at the end. We increment the
+      // position first because we want to reinitialize everything when we
+      // restart.
+      ++Position;
+      GotoPosition(Position % Actions.size());
 
       // If this was an advance action, we are done.
       if (Result.Kind == ChannelAction::ActionResult::Advance)
@@ -285,12 +293,58 @@ namespace {
       return ActionResult::MakeAdvance();
     }
   };
+
+  class RepeatCount : public ChannelAction {
+    unsigned Count;
+    int GotoPosition;
+
+    unsigned CurrentCount;
+
+  public:
+    RepeatCount(unsigned Count_, int GotoPosition_)
+      : Count(Count_), GotoPosition(GotoPosition_) {}
+
+    virtual void Initialize(ChannelProgram &Program) {
+      CurrentCount = 1;
+    }
+
+    virtual ActionResult Step(MusicMonitorHandler::BeatKind Kind,
+                              ChannelProgram &Program) {
+      if (++CurrentCount < Count)
+        return ActionResult::MakeGoto(Program.GetPosition() + GotoPosition);
+      return ActionResult::MakeAdvance();
+    }
+  };
+
+  class RepeatTime : public ChannelAction {
+    double Time;
+    int GotoPosition;
+
+    double StartTime;
+
+  public:
+    RepeatTime(unsigned Time_, int GotoPosition_)
+      : Time(Time_), GotoPosition(GotoPosition_) {}
+
+    virtual void Initialize(ChannelProgram &Program) {
+      StartTime = Program.GetProgram().GetActiveBeatElapsed();
+    }
+
+    virtual ActionResult Step(MusicMonitorHandler::BeatKind Kind,
+                              ChannelProgram &Program) {
+      double Elapsed = Program.GetProgram().GetActiveBeatElapsed() - StartTime;
+      if (Elapsed < Time)
+        return ActionResult::MakeGoto(Program.GetPosition() + GotoPosition);
+      return ActionResult::MakeAdvance();
+    }
+  };
 }
 
 ///
 
 void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   std::vector<ChannelProgram *> Programs;
+  double MaxProgramTime = 60;
 
   // Create a simple toggle program, by making alternating channels.
   ChannelProgram *P0 = new ChannelProgram();
@@ -303,9 +357,10 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.clear();
   Programs.push_back(P0);
   Programs.push_back(P1);
-  Result.push_back(new LightProgramImpl("alternating program", 180, Programs));
+  Result.push_back(new LightProgramImpl("alternating", MaxProgramTime,
+                                        Programs));
 
-  // Create a slightly more complex toggle program, that leaves one light one
+  // Create a slightly more complex toggle program, that leaves one light on
   // while toggling the other, then switches.
   P0 = new ChannelProgram();
   P0->GetActions().push_back(new SetLightAction(true));
@@ -333,8 +388,135 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.clear();
   Programs.push_back(P0);
   Programs.push_back(P1);
-  Result.push_back(new LightProgramImpl("long alternating program", 180,
+  Result.push_back(new LightProgramImpl("long alternating", MaxProgramTime,
                                         Programs));
+
+  // Create an alternating toggle that toggles for 5s.
+  P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new RepeatTime(5, -1));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new RepeatTime(10, -2));
+  P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new RepeatTime(5, -2));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new RepeatTime(10, -1));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  if (true)
+    Result.push_back(new LightProgramImpl("timed alternating", MaxProgramTime,
+                                          Programs));
+
+  // Create a slow toggle that switches lights every 3s.
+  P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new RepeatTime(3, -1));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new RepeatTime(6, -1));
+  P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new RepeatTime(3, -1));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new RepeatTime(6, -1));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  if (true)
+    Result.push_back(new LightProgramImpl("slow alternating", MaxProgramTime,
+                                          Programs));
+
+  // Create a program that leaves one light on, and alternates the other one in
+  // varying patterns.
+  P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new RepeatTime(1, -1));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(true));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  Result.push_back(new LightProgramImpl("stable with flicker", MaxProgramTime,
+                                        Programs));
+
+  // Very slow patterns (early).
+
+  if (true) {
+    P0 = new ChannelProgram();
+    P0->GetActions().push_back(new SetLightAction(true));
+    P1 = new ChannelProgram();
+    P1->GetActions().push_back(new SetLightAction(false));
+  
+    Programs.clear();
+    Programs.push_back(P0);
+    Programs.push_back(P1);
+    Result.push_back(new LightProgramImpl("static: mono", MaxProgramTime,
+                                          Programs));
+  }
+
+  if (true) {
+    P0 = new ChannelProgram();
+    P0->GetActions().push_back(new SetLightAction(true));
+    P1 = new ChannelProgram();
+    P1->GetActions().push_back(new SetLightAction(true));
+  
+    Programs.clear();
+    Programs.push_back(P0);
+    Programs.push_back(P1);
+    Result.push_back(new LightProgramImpl("static: dual", MaxProgramTime,
+                                          Programs));
+  }
+
+  if (true) {
+    unsigned Length = 90;
+    P0 = new ChannelProgram();
+    P0->GetActions().push_back(new SetLightAction(true));
+    P0->GetActions().push_back(new RepeatCount(Length, -1));
+    P0->GetActions().push_back(new SetLightAction(false));
+    P0->GetActions().push_back(new RepeatCount(Length, -1));
+    P1 = new ChannelProgram();
+    P1->GetActions().push_back(new SetLightAction(false));
+    P1->GetActions().push_back(new RepeatCount(Length, -1));
+    P1->GetActions().push_back(new SetLightAction(true));
+    P1->GetActions().push_back(new RepeatCount(Length, -1));
+  
+    Programs.clear();
+    Programs.push_back(P0);
+    Programs.push_back(P1);
+    Result.push_back(new LightProgramImpl("vs: alternating", MaxProgramTime,
+                                          Programs));
+  }
+
+  if (true) {
+    unsigned Length = 90;
+    P0 = new ChannelProgram();
+    P0->GetActions().push_back(new SetLightAction(true));
+    P0->GetActions().push_back(new RepeatCount(Length, -1));
+    P0->GetActions().push_back(new SetLightAction(false));
+    P0->GetActions().push_back(new RepeatCount(Length, -1));
+    P0->GetActions().push_back(new SetLightAction(true));
+    P0->GetActions().push_back(new RepeatCount(Length, -1));
+    P1 = new ChannelProgram();
+    P1->GetActions().push_back(new SetLightAction(false));
+    P1->GetActions().push_back(new RepeatCount(Length, -1));
+    P1->GetActions().push_back(new SetLightAction(true));
+    P1->GetActions().push_back(new RepeatCount(Length, -1));
+    P1->GetActions().push_back(new SetLightAction(true));
+    P1->GetActions().push_back(new RepeatCount(Length, -1));
+  
+    Programs.clear();
+    Programs.push_back(P0);
+    Programs.push_back(P1);
+    Result.push_back(new LightProgramImpl("vs: alternating (2)", MaxProgramTime,
+                                          Programs));
+  }
 }
-
-
