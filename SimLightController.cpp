@@ -6,6 +6,7 @@
 #include <OpenGL/OpenGL.h>
 #include <GLUT/glut.h>
 
+#include "LightManager.h"
 #include "SimLightController.h"
 #include "Util.h"
 
@@ -26,8 +27,11 @@ class GLUTSimLightController : public SimLightController {
   void idle();
   void draw();  
   void keypress(unsigned char key, int x, int y) {
-    if (key=='q' || key=='Q' || key==27) {
+    if (key == 'q' || key == 'Q' || key == 27) {
       exit(0);
+    } else if (key == 'n' || key == 'N') {
+      if (light_manager)
+        light_manager->ChangePrograms();
     }
   }
 
@@ -35,8 +39,10 @@ class GLUTSimLightController : public SimLightController {
   double last_beat_time;
   unsigned num_frames;
 
+  LightManager *light_manager;
+
 public:
-  GLUTSimLightController() : lights_enabled() {
+  GLUTSimLightController() : light_manager(0), lights_enabled() {
     int argc = 0;
     char *argv = 0;
 
@@ -66,6 +72,10 @@ public:
 
   virtual void MainLoop() {
     glutMainLoop();
+  }
+
+  virtual void RegisterLightManager(LightManager &Manager) {
+    light_manager = &Manager;
   }
 };
 }

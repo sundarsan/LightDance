@@ -78,6 +78,13 @@ int main(int argc, char **argv) {
     }
   }
 
+  // Set a random seed.
+  union {
+    double fVal;
+    long long llVal;
+  } Seed = { get_time_in_seconds() };
+  srand48(Seed.llVal);
+
   // We just hard code the light configuration for now.
   std::vector<LightInfo> LightSetup;
   LightSetup.push_back(LightInfo::Make(LightInfo::kLightKind_Pinspot,
@@ -96,8 +103,11 @@ int main(int argc, char **argv) {
                                               CreatePhidgetLightController());
 
   // Create the light manager as our handler.
-  MusicMonitorHandler *MMH = CreateLightManager(controller, LightSetup);
+  LightManager *LightManager = CreateLightManager(controller, LightSetup);
+  SLC->RegisterLightManager(*LightManager);
 
+  // Form the final music monitor handler.
+  MusicMonitorHandler *MMH = LightManager;
   if (LogBeats)
     MMH = new LoggingMusicHandler(LogBeats, MMH);
 
