@@ -384,20 +384,23 @@ namespace {
   class IfOkToStrobe : public ChannelAction {
     double Percent;
     int GotoPosition;
+    double MinBPM;
 
   public:
-    IfOkToStrobe(double Percent_, int GotoPosition_)
-      : Percent(Percent_), GotoPosition(GotoPosition_) {}
+    IfOkToStrobe(double Percent_, int GotoPosition_,
+                 double MinBPM_ = 300.0)
+      : Percent(Percent_), GotoPosition(GotoPosition_), MinBPM(MinBPM_) {}
 
     virtual ActionResult Step(MusicMonitorHandler::BeatKind Kind,
                               ChannelProgram &Program) {
+      double BPM = Program.GetManager().GetRecentBPM();
       double Elapsed = get_elapsed_time_in_seconds();
       double EnabledTime = Program.GetLightState().TotalEnabledTime;
       double PercentStrobed =  EnabledTime / Elapsed;
-      fprintf(stderr, "ok to strobe: %f / %f  = %f\n", EnabledTime, Elapsed,
-              PercentStrobed);
+      fprintf(stderr, "ok to strobe: %f / %f  = %f, bpm: %f < %f\n",
+              EnabledTime, Elapsed, PercentStrobed, BPM, MinBPM);
 
-      if (PercentStrobed <= Percent)
+      if (PercentStrobed <= Percent && BPM >= MinBPM)
         return ActionResult::MakeGoto(Program.GetPosition() + GotoPosition);
       return ActionResult::MakeAdvance();
     }
@@ -446,6 +449,23 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Result.push_back(new LightProgramImpl("alternating", MaxProgramTime,
                                         Programs));
 
+  // Create a simple toggle program, by making alternating channels.
+  P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(true));
+  P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(true));
+  P2 = new ChannelProgram();
+  P2->GetActions().push_back(new SetLightAction(true));
+  P2->GetActions().push_back(new SetLightAction(false));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  Programs.push_back(P2);
+  Programs.push_back(GetStrobeProgram());
+  Result.push_back(new LightProgramImpl("alternating (2x)", MaxProgramTime,
+                                        Programs));
+
   // Create a simple chase program.
   P0 = new ChannelProgram();
   P0->GetActions().push_back(new SetLightAction(true));
@@ -466,6 +486,60 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.push_back(P2);
   Programs.push_back(GetStrobeProgram());
   Result.push_back(new LightProgramImpl("chase", MaxProgramTime, Programs,
+                                        /*ShortesteBeatInterval=*/.1));
+
+  // Create a double chase program.
+  P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P2 = new ChannelProgram();
+  P2->GetActions().push_back(new SetLightAction(true));
+  P2->GetActions().push_back(new SetLightAction(false));
+  P2->GetActions().push_back(new SetLightAction(true));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  Programs.push_back(P2);
+  Programs.push_back(GetStrobeProgram());
+  Result.push_back(new LightProgramImpl("double chase", MaxProgramTime,
+                                        Programs,
+                                        /*ShortesteBeatInterval=*/.1));
+
+  // Create a double chase (delayed) program.
+  P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new RepeatCount(4, -1));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new RepeatCount(4, -1));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new RepeatCount(4, -1));
+  P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new RepeatCount(4, -1));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new RepeatCount(4, -1));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new RepeatCount(4, -1));
+  P2 = new ChannelProgram();
+  P2->GetActions().push_back(new SetLightAction(true));
+  P2->GetActions().push_back(new RepeatCount(4, -1));
+  P2->GetActions().push_back(new SetLightAction(false));
+  P2->GetActions().push_back(new RepeatCount(4, -1));
+  P2->GetActions().push_back(new SetLightAction(true));
+  P2->GetActions().push_back(new RepeatCount(4, -1));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  Programs.push_back(P2);
+  Result.push_back(new LightProgramImpl("double chase (slow)", MaxProgramTime,
+                                        Programs,
                                         /*ShortesteBeatInterval=*/.1));
 
   // Create a slightly more complex toggle program, that leaves one light on
