@@ -133,6 +133,12 @@ namespace {
 
       return 60 * NumBeats / (get_elapsed_time_in_seconds() - OldestTime);
     }
+
+    virtual std::string GetProgramName() const {
+      if (ActiveProgram)
+        return ActiveProgram->GetName();
+      return "(no active program)";
+    }
   };
 
 }

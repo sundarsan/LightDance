@@ -164,7 +164,7 @@ namespace {
   public:
     LightProgramImpl(std::string Name_, double MaxProgramTime_,
                      std::vector<ChannelProgram *> ChannelPrograms_,
-                     double ShortestBeatInterval_ = 0.03)
+                     double ShortestBeatInterval_ = 0.05)
       : ActiveManager(0),
         ActiveStartTime(-1),
         ActiveBeatElapsed(-1),
@@ -397,8 +397,8 @@ namespace {
       double Elapsed = get_elapsed_time_in_seconds();
       double EnabledTime = Program.GetLightState().TotalEnabledTime;
       double PercentStrobed =  EnabledTime / Elapsed;
-      fprintf(stderr, "ok to strobe: %f / %f  = %f, bpm: %f < %f\n",
-              EnabledTime, Elapsed, PercentStrobed, BPM, MinBPM);
+      fprintf(stderr, "strobe? %.2f / %.2f  = %.2f < %.2f, bpm: %.2f < %.2f\n",
+              EnabledTime, Elapsed, PercentStrobed, Percent, BPM, MinBPM);
 
       if (PercentStrobed <= Percent && BPM >= MinBPM)
         return ActionResult::MakeGoto(Program.GetPosition() + GotoPosition);
@@ -538,6 +538,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.push_back(P0);
   Programs.push_back(P1);
   Programs.push_back(P2);
+  Programs.push_back(GetStrobeProgram());
   Result.push_back(new LightProgramImpl("double chase (slow)", MaxProgramTime,
                                         Programs,
                                         /*ShortesteBeatInterval=*/.1));
@@ -620,7 +621,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.push_back(P1);
   Programs.push_back(P2);
   Programs.push_back(GetStrobeProgram());
-  Result.push_back(new LightProgramImpl("roll (slow)", MaxProgramTime,
+  Result.push_back(new LightProgramImpl("roll", MaxProgramTime,
                                         Programs,
                                         /*ShortesteBeatInterval=*/.1));
 

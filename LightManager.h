@@ -34,6 +34,8 @@ public:
   virtual const LightState &GetLightState(unsigned Index) const = 0;
 
   virtual double GetRecentBPM() const = 0;
+  
+  virtual std::string GetProgramName() const = 0;
 };
 
 LightManager *CreateLightManager(LightController *Controller,
