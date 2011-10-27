@@ -211,7 +211,7 @@ namespace {
         unsigned Index = int(floorf(drand48() * UsableLights.size()));
 
         ActiveAssignments.push_back(AvailableLights[UsableLights[Index]].Index);
-        AvailableLights.erase(AvailableLights.begin() + Index);
+        AvailableLights.erase(AvailableLights.begin() + UsableLights[Index]);
       }
 
       for (unsigned i = 0, e = ChannelPrograms.size(); i != e; ++i) {
@@ -539,7 +539,6 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.clear();
   Programs.push_back(P0);
   Programs.push_back(P1);
-  Programs.push_back(GetStrobeProgram());
   if (true)
     Result.push_back(new LightProgramImpl("slow alternating", MaxProgramTime,
                                           Programs));
@@ -556,7 +555,6 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.clear();
   Programs.push_back(P0);
   Programs.push_back(P1);
-  Programs.push_back(GetStrobeProgram());
   Result.push_back(new LightProgramImpl("stable with flicker", MaxProgramTime,
                                         Programs));
 
