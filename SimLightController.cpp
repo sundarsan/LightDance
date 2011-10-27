@@ -42,7 +42,7 @@ class GLUTSimLightController : public SimLightController {
   LightManager *light_manager;
 
 public:
-  GLUTSimLightController() : light_manager(0), lights_enabled() {
+  GLUTSimLightController() : lights_enabled(), light_manager(0) {
     int argc = 0;
     char *argv = 0;
 
@@ -148,9 +148,9 @@ void GLUTSimLightController::draw() {
     float color[3];
     float position[2];
   } lights[4] = {
-    { .2, {  0,.8, 0 }, { -.5, -.5 } },
-    { .2, {  0, 0,.8 }, {  .5,  .5 } },
+    { .2, { .9,.9,.9 }, { -.5, -.5 } },
     { .2, { .8, 0, 0 }, {  .5, -.5 } },
+    { .2, {  0,.8, 0 }, {  .5,  .5 } },
     { .2, { .8,.8, 0 }, { -.5,  .5 } },
   };
   for (unsigned i = 0; i != 4; ++i) {
