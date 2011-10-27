@@ -118,9 +118,29 @@ namespace {
       if (!ActiveProgram) {
         ChangeProgramRequested = false;
 
-        ActiveProgram = AvailablePrograms[lrand48() % AvailablePrograms.size()];
-        ActiveProgram->Start(*this);
+        // Compute the current selection rating for each program.
+        std::vector<double> Ratings;
+        double SumRatings = 0.0;
+        for (unsigned i = 0, e = AvailablePrograms.size(); i != e; ++i) {
+          double Rating = AvailablePrograms[i]->GetRating(*this);
+          Ratings.push_back(Rating);
+          SumRatings += Rating;
+        }
 
+        // Select a program based on the weighted probability.
+        double PickValue = drand48() * SumRatings;
+        for (unsigned i = 0, e = AvailablePrograms.size(); i != e; ++i) {
+          PickValue -= Ratings[i];
+
+          if (PickValue <= 0.0 || i == e - 1) {
+            ActiveProgram = AvailablePrograms[i];
+            break;
+          }
+        }
+        assert(ActiveProgram && "random selection failed!");
+
+        // Start the program.
+        ActiveProgram->Start(*this);
         fprintf(stderr, "current program: '%s'\n",
                 ActiveProgram->GetName().c_str());
       }

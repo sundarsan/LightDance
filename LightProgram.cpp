@@ -160,18 +160,24 @@ namespace {
     std::vector<ChannelProgram *> ChannelPrograms;
 
     double ShortestBeatInterval;
+    double MaxBPM;
+    double Rating;
 
   public:
     LightProgramImpl(std::string Name_, double MaxProgramTime_,
                      std::vector<ChannelProgram *> ChannelPrograms_,
-                     double ShortestBeatInterval_ = 0.05)
+                     double ShortestBeatInterval_ = 0.05,
+                     double MaxBPM_ = -1,
+                     double Rating_ = 1.0)
       : ActiveManager(0),
         ActiveStartTime(-1),
         ActiveBeatElapsed(-1),
         Name(Name_),
         MaxProgramTime(MaxProgramTime_),
         ChannelPrograms(ChannelPrograms_),
-        ShortestBeatInterval(ShortestBeatInterval_)
+        ShortestBeatInterval(ShortestBeatInterval_),
+        MaxBPM(MaxBPM_),
+        Rating(Rating_)
     {
     }
 
@@ -182,6 +188,15 @@ namespace {
 
     virtual std::string GetName() const {
       return Name;
+    }
+
+    virtual double GetRating(LightManager &Manager) const {
+      // If the current BPM is above the max BPM, don't select this program.
+      if (MaxBPM != -1 && Manager.GetRecentBPM() > MaxBPM)
+        return 0.0;
+
+      // Otherwise, return the rating.
+      return Rating;
     }
 
     virtual void Start(LightManager &Manager) {
@@ -713,7 +728,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.push_back(P0);
   Programs.push_back(P1);
   Result.push_back(new LightProgramImpl("stable with flicker", MaxProgramTime,
-                                        Programs));
+                                        Programs, 0.05, 200));
 
   // Very slow patterns (early).
 
@@ -727,7 +742,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
     Programs.push_back(P0);
     Programs.push_back(P1);
     Result.push_back(new LightProgramImpl("static: mono", MaxProgramTime,
-                                          Programs));
+                                          Programs, 0.05, 200));
   }
 
   if (true) {
@@ -740,7 +755,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
     Programs.push_back(P0);
     Programs.push_back(P1);
     Result.push_back(new LightProgramImpl("static: dual", MaxProgramTime,
-                                          Programs));
+                                          Programs, 0.05, 200));
   }
 
   if (true) {
@@ -760,7 +775,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
     Programs.push_back(P0);
     Programs.push_back(P1);
     Result.push_back(new LightProgramImpl("vs: alternating", MaxProgramTime,
-                                          Programs));
+                                          Programs, 0.05, 200));
   }
 
   if (true) {
@@ -784,6 +799,6 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
     Programs.push_back(P0);
     Programs.push_back(P1);
     Result.push_back(new LightProgramImpl("vs: alternating (2)", MaxProgramTime,
-                                          Programs));
+                                          Programs, 0.05, 200));
   }
 }

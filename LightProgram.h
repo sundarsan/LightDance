@@ -22,6 +22,7 @@ public:
   virtual ~LightProgram();
 
   virtual std::string GetName() const = 0;
+  virtual double GetRating(LightManager &Manager) const = 0;
 
   virtual bool WorksWithSetup(const std::vector<LightInfo> &Lights) const = 0;
 
