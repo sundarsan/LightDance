@@ -66,9 +66,12 @@ namespace {
 
     std::vector<ChannelAction *> Actions;
     unsigned Position;
+    bool NeedsStrobe;
 
   public:
-    ChannelProgram() : ActiveProgram(0), ActiveLightIndex(0), Position(0) {}
+    ChannelProgram(bool NeedsStrobe_ = false)
+      : ActiveProgram(0), ActiveLightIndex(0), Position(0),
+        NeedsStrobe(NeedsStrobe_) {}
 
     ~ChannelProgram() {
       while (!Actions.empty()) {
@@ -128,12 +131,15 @@ namespace {
       return GetManager().SetLight(ActiveLightIndex, Enable);
     }
 
-    bool WorksWithLight(const LightInfo &Info) const {
-      // Don't try and use strobes yet.
-      if (Info.isStrobe())
-        return false;
+    const LightState &GetLightState(bool Enable) {
+      return GetManager().GetLightState(ActiveLightIndex);
+    }
 
-      return true;
+    bool WorksWithLight(const LightInfo &Info) const {
+      if (NeedsStrobe)
+        return Info.isStrobe();
+
+      return !Info.isStrobe();
     }
   };
 
@@ -153,15 +159,19 @@ namespace {
     /// The program to run for each light channel.
     std::vector<ChannelProgram *> ChannelPrograms;
 
+    double ShortestBeatInterval;
+
   public:
     LightProgramImpl(std::string Name_, double MaxProgramTime_,
-                     std::vector<ChannelProgram *> ChannelPrograms_)
+                     std::vector<ChannelProgram *> ChannelPrograms_,
+                     double ShortestBeatInterval_ = 0.03)
       : ActiveManager(0),
         ActiveStartTime(-1),
         ActiveBeatElapsed(-1),
         Name(Name_),
         MaxProgramTime(MaxProgramTime_),
-        ChannelPrograms(ChannelPrograms_)
+        ChannelPrograms(ChannelPrograms_),
+        ShortestBeatInterval(ShortestBeatInterval_)
     {
     }
 
@@ -246,7 +256,7 @@ namespace {
 
       // For now, we globally filter out beats that are too fast. I haven't
       // figured out a better place to incorporate this yet.
-      if (Elapsed - ActiveBeatElapsed < .03)
+      if (Elapsed - ActiveBeatElapsed < ShortestBeatInterval)
         return;
 
       ActiveBeatElapsed = Elapsed;
@@ -370,27 +380,93 @@ namespace {
       return ActionResult::MakeAdvance();
     }
   };
+
+  class IfOkToStrobe : public ChannelAction {
+    double Percent;
+    int GotoPosition;
+
+  public:
+    IfOkToStrobe(double Percent_, int GotoPosition_)
+      : Percent(Percent_), GotoPosition(GotoPosition_) {}
+
+    virtual ActionResult Step(MusicMonitorHandler::BeatKind Kind,
+                              ChannelProgram &Program) {
+      double Elapsed = get_elapsed_time_in_seconds();
+      double EnabledTime = Program.GetLightState().TotalEnabledTime;
+      double PercentStrobed =  EnabledTime / Elapsed;
+      fprintf(stderr, "ok to strobe: %f / %f  = %f\n", EnabledTime, Elapsed,
+              PercentStrobed);
+
+      if (PercentStrobed <= Percent)
+        return ActionResult::MakeGoto(Program.GetPosition() + GotoPosition);
+      return ActionResult::MakeAdvance();
+    }
+  };
 }
 
 ///
 
+static ChannelProgram *GetStrobeProgram() {
+  ChannelProgram *P = new ChannelProgram(/*NeedStrobe=*/true);
+
+  P->GetActions().push_back(new IfOkToStrobe(.1, 4));
+
+  // Not ok to strobe.
+  P->GetActions().push_back(new SetLightAction(false));
+  P->GetActions().push_back(new RepeatCount(180, -1));
+  P->GetActions().push_back(new RepeatCount(1, -3));
+
+  // Ok to strobe.
+  P->GetActions().push_back(new SetLightAction(true));
+  P->GetActions().push_back(new RepeatCount(30, -1));
+  P->GetActions().push_back(new SetLightAction(false));
+  P->GetActions().push_back(new RepeatCount(30, -1));
+  P->GetActions().push_back(new RepeatCount(5, -4));
+                                           
+  return P;
+}
+
 void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   std::vector<ChannelProgram *> Programs;
   double MaxProgramTime = 60;
+  ChannelProgram *P0, *P1, *P2;
 
   // Create a simple toggle program, by making alternating channels.
-  ChannelProgram *P0 = new ChannelProgram();
+  P0 = new ChannelProgram();
   P0->GetActions().push_back(new SetLightAction(false));
   P0->GetActions().push_back(new SetLightAction(true));
-  ChannelProgram *P1 = new ChannelProgram();
+  P1 = new ChannelProgram();
   P1->GetActions().push_back(new SetLightAction(true));
   P1->GetActions().push_back(new SetLightAction(false));
 
   Programs.clear();
   Programs.push_back(P0);
   Programs.push_back(P1);
+  Programs.push_back(GetStrobeProgram());
   Result.push_back(new LightProgramImpl("alternating", MaxProgramTime,
                                         Programs));
+
+  // Create a simple chase program.
+  P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(false));
+  P2 = new ChannelProgram();
+  P2->GetActions().push_back(new SetLightAction(false));
+  P2->GetActions().push_back(new SetLightAction(false));
+  P2->GetActions().push_back(new SetLightAction(true));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  Programs.push_back(P2);
+  Programs.push_back(GetStrobeProgram());
+  Result.push_back(new LightProgramImpl("chase", MaxProgramTime, Programs,
+                                        /*ShortesteBeatInterval=*/.1));
 
   // Create a slightly more complex toggle program, that leaves one light on
   // while toggling the other, then switches.
@@ -420,6 +496,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.clear();
   Programs.push_back(P0);
   Programs.push_back(P1);
+  Programs.push_back(GetStrobeProgram());
   Result.push_back(new LightProgramImpl("long alternating", MaxProgramTime,
                                         Programs));
 
@@ -442,6 +519,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.clear();
   Programs.push_back(P0);
   Programs.push_back(P1);
+  Programs.push_back(GetStrobeProgram());
   if (true)
     Result.push_back(new LightProgramImpl("timed alternating", MaxProgramTime,
                                           Programs));
@@ -461,6 +539,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.clear();
   Programs.push_back(P0);
   Programs.push_back(P1);
+  Programs.push_back(GetStrobeProgram());
   if (true)
     Result.push_back(new LightProgramImpl("slow alternating", MaxProgramTime,
                                           Programs));
@@ -477,6 +556,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.clear();
   Programs.push_back(P0);
   Programs.push_back(P1);
+  Programs.push_back(GetStrobeProgram());
   Result.push_back(new LightProgramImpl("stable with flicker", MaxProgramTime,
                                         Programs));
 
