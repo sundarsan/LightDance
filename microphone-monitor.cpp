@@ -88,11 +88,17 @@ int main(int argc, char **argv) {
   // We just hard code the light configuration for now.
   std::vector<LightInfo> LightSetup;
   LightSetup.push_back(LightInfo::Make(LightInfo::kLightKind_Pinspot,
-                                       LightInfo::kLightColor_Red,
+                                       LightInfo::kLightColor_White,
                                        /*Index=*/0));
+  LightSetup.push_back(LightInfo::Make(LightInfo::kLightKind_Pinspot,
+                                       LightInfo::kLightColor_Red,
+                                       /*Index=*/1));
   LightSetup.push_back(LightInfo::Make(LightInfo::kLightKind_Pinspot,
                                        LightInfo::kLightColor_Green,
                                        /*Index=*/2));
+  LightSetup.push_back(LightInfo::Make(LightInfo::kLightKind_Strobe,
+                                       LightInfo::kLightColor_White,
+                                       /*Index=*/3));
 
   // Create the light controller.
   SimLightController *SLC = CreateSimLightController();
