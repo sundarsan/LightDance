@@ -417,11 +417,11 @@ static ChannelProgram *GetStrobeProgram() {
   // Not ok to strobe.
   P->GetActions().push_back(new SetLightAction(false));
   P->GetActions().push_back(new RepeatCount(180, -1));
-  P->GetActions().push_back(new RepeatCount(1, -3));
+  P->GetActions().push_back(new RepeatCount(999, -3));
 
   // Ok to strobe.
   P->GetActions().push_back(new SetLightAction(true));
-  P->GetActions().push_back(new RepeatCount(30, -1));
+  P->GetActions().push_back(new RepeatCount(90, -1));
   P->GetActions().push_back(new SetLightAction(false));
   P->GetActions().push_back(new RepeatCount(30, -1));
   P->GetActions().push_back(new RepeatCount(5, -4));
