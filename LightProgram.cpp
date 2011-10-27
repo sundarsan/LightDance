@@ -1,9 +1,11 @@
 #include "LightProgram.h"
 
+#include "LightInfo.h"
 #include "LightManager.h"
 #include "Util.h"
 
 #include <cassert>
+#include <cmath>
 #include <vector>
 
 namespace {
@@ -125,6 +127,14 @@ namespace {
     void SetLight(bool Enable) {
       return GetManager().SetLight(ActiveLightIndex, Enable);
     }
+
+    bool WorksWithLight(const LightInfo &Info) const {
+      // Don't try and use strobes yet.
+      if (Info.isStrobe())
+        return false;
+
+      return true;
+    }
   };
 
   class LightProgramImpl : public LightProgram {
@@ -172,13 +182,35 @@ namespace {
       ActiveStartTime = get_elapsed_time_in_seconds();
       ActiveBeatElapsed = -1;
 
-      // FIXME: Create random assignments properly.
-      unsigned FirstLight = drand48() < .5;
-      ActiveAssignments.push_back(FirstLight);
-      ActiveAssignments.push_back(1 - FirstLight);
+      // Create the light assignment. This isn't really good enough, as it could
+      // fail to find assignments if programs got more complicated (could assign
+      // to multiple light types). Good enough for now though.
+      std::vector<LightInfo> AvailableLights = Manager.GetSetup();
+      for (unsigned i = 0, e = ChannelPrograms.size(); i != e; ++i) {
+        std::vector<unsigned> UsableLights;
+        ChannelProgram *Program = ChannelPrograms[i];
+
+        // Determine the lights that this program can use.
+        for (unsigned j = 0; j != AvailableLights.size(); ++j) {
+          if (Program->WorksWithLight(AvailableLights[j]))
+            UsableLights.push_back(j);
+        }
+
+        assert(!UsableLights.empty() &&
+               "unable to compute light assignment!");
+        unsigned Index = int(floorf(drand48() * UsableLights.size()));
+
+        ActiveAssignments.push_back(AvailableLights[UsableLights[Index]].Index);
+        AvailableLights.erase(AvailableLights.begin() + Index);
+      }
 
       for (unsigned i = 0, e = ChannelPrograms.size(); i != e; ++i) {
         ChannelPrograms[i]->Start(ActiveAssignments[i], *this);
+      }
+
+      // Turn off any lights which aren't assigned.
+      for (unsigned i = 0, e = AvailableLights.size(); i != e; ++i) {
+        GetManager().SetLight(AvailableLights[i].Index, false);
       }
     }
     virtual void Stop() {

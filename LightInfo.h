@@ -29,6 +29,13 @@ public:
     Result.Index = Index;
     return Result;
   }
+
+  bool isPinspot() const {
+    return Kind == kLightKind_Pinspot;
+  }
+  bool isStrobe() const {
+    return Kind == kLightKind_Strobe;
+  }
 };
 
 #endif
