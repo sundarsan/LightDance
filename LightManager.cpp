@@ -21,7 +21,7 @@ namespace {
     LightProgram *ActiveProgram;
     bool ChangeProgramRequested;
 
-    double RecentBeatTimes[128];
+    double RecentBeatTimes[64];
     unsigned RecentBeatPosition, NumRecentBeatTimes;
 
   protected:
