@@ -32,6 +32,8 @@ public:
   virtual void SetLight(unsigned Index, bool Enable) = 0;
 
   virtual const LightState &GetLightState(unsigned Index) const = 0;
+
+  virtual double GetRecentBPM() const = 0;
 };
 
 LightManager *CreateLightManager(LightController *Controller,

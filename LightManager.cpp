@@ -21,6 +21,9 @@ namespace {
     LightProgram *ActiveProgram;
     bool ChangeProgramRequested;
 
+    double RecentBeatTimes[128];
+    unsigned RecentBeatPosition, NumRecentBeatTimes;
+
   protected:
     virtual LightController &GetController() const {
       return *Controller;
@@ -35,7 +38,10 @@ namespace {
       : Controller(Controller_),
         LightSetup(LightSetup_),
         ActiveProgram(0),
-        ChangeProgramRequested(false)
+        ChangeProgramRequested(false),
+        RecentBeatTimes(),
+        RecentBeatPosition(0),
+        NumRecentBeatTimes(sizeof(RecentBeatTimes) / sizeof(RecentBeatTimes[0]))
     {
       // Load the list of all programs.
       std::vector<LightProgram *> AllPrograms;
@@ -68,6 +74,10 @@ namespace {
     }
 
     virtual void HandleBeat(MusicMonitorHandler::BeatKind Kind, double Time) {
+      RecentBeatTimes[RecentBeatPosition % NumRecentBeatTimes] =
+        get_elapsed_time_in_seconds();
+      ++RecentBeatPosition;
+
       Controller->BeatNotification(Kind, Time);
 
       MaybeSwitchPrograms();
@@ -114,6 +124,14 @@ namespace {
         fprintf(stderr, "current program: '%s'\n",
                 ActiveProgram->GetName().c_str());
       }
+    }
+
+    virtual double GetRecentBPM() const {
+      unsigned NumBeats = std::min(RecentBeatPosition, NumRecentBeatTimes);
+      double OldestTime = RecentBeatTimes[
+        (RecentBeatPosition + 1) % NumRecentBeatTimes];
+
+      return 60 * NumBeats / (get_elapsed_time_in_seconds() - OldestTime);
     }
   };
 

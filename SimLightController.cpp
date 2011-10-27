@@ -197,6 +197,13 @@ void GLUTSimLightController::draw() {
     glutDrawString(10, 10 + textHeight*y++, buffer);
   }
 
+  if (light_manager) {
+    double bpm = light_manager->GetRecentBPM();
+    sprintf(buffer, "BPM: %.4fs\n", bpm);
+    glColor3f(1, 1, 1);
+    glutDrawString(10, 10 + textHeight*y++, buffer);
+  }
+
   glFlush();
 
   glutSwapBuffers();
