@@ -542,6 +542,88 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
                                         Programs,
                                         /*ShortesteBeatInterval=*/.1));
 
+  // Create a roll program.
+  P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new RepeatCount(4, -1));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new RepeatCount(4, -1));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new RepeatCount(4, -1));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new RepeatCount(4, -1));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new RepeatCount(4, -1));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new RepeatCount(4, -1));
+  P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new RepeatCount(4, -1));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new RepeatCount(4, -1));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new RepeatCount(4, -1));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new RepeatCount(4, -1));
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new RepeatCount(4, -1));
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new RepeatCount(4, -1));
+  P2 = new ChannelProgram();
+  P2->GetActions().push_back(new SetLightAction(false));
+  P2->GetActions().push_back(new RepeatCount(4, -1));
+  P2->GetActions().push_back(new SetLightAction(false));
+  P2->GetActions().push_back(new RepeatCount(4, -1));
+  P2->GetActions().push_back(new SetLightAction(false));
+  P2->GetActions().push_back(new RepeatCount(4, -1));
+  P2->GetActions().push_back(new SetLightAction(true));
+  P2->GetActions().push_back(new RepeatCount(4, -1));
+  P2->GetActions().push_back(new SetLightAction(true));
+  P2->GetActions().push_back(new RepeatCount(4, -1));
+  P2->GetActions().push_back(new SetLightAction(true));
+  P2->GetActions().push_back(new RepeatCount(4, -1));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  Programs.push_back(P2);
+  Programs.push_back(GetStrobeProgram());
+  Result.push_back(new LightProgramImpl("roll (slow)", MaxProgramTime,
+                                        Programs,
+                                        /*ShortesteBeatInterval=*/.1));
+
+  // Create a roll program.
+  P0 = new ChannelProgram();
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new SetLightAction(false));
+  P0->GetActions().push_back(new SetLightAction(true));
+  P1 = new ChannelProgram();
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(true));
+  P1->GetActions().push_back(new SetLightAction(false));
+  P1->GetActions().push_back(new SetLightAction(false));
+  P2 = new ChannelProgram();
+  P2->GetActions().push_back(new SetLightAction(false));
+  P2->GetActions().push_back(new SetLightAction(false));
+  P2->GetActions().push_back(new SetLightAction(false));
+  P2->GetActions().push_back(new SetLightAction(true));
+  P2->GetActions().push_back(new SetLightAction(true));
+  P2->GetActions().push_back(new SetLightAction(true));
+
+  Programs.clear();
+  Programs.push_back(P0);
+  Programs.push_back(P1);
+  Programs.push_back(P2);
+  Programs.push_back(GetStrobeProgram());
+  Result.push_back(new LightProgramImpl("roll (slow)", MaxProgramTime,
+                                        Programs,
+                                        /*ShortesteBeatInterval=*/.1));
+
   // Create a slightly more complex toggle program, that leaves one light on
   // while toggling the other, then switches.
   P0 = new ChannelProgram();
