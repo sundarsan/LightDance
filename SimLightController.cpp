@@ -54,7 +54,7 @@ public:
     glutInit(&argc, &argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowPosition(100, 100);
-    glutInitWindowSize(640, 480);
+    glutInitWindowSize(1024, 768);
     glutCreateWindow("SimLightController");
 
     glutIdleFunc(idle_callback);
