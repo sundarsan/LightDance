@@ -58,7 +58,7 @@ public:
 };
 
 int main(int argc, char **argv) {
-  bool SwitchLights = false;
+  bool SwitchLights = true;
   const char *LogBeats = 0;
 
   for (int i = 1; i != argc; ++i) {
@@ -66,6 +66,8 @@ int main(int argc, char **argv) {
 
     if (arg == "--switch-lights") {
       SwitchLights = true;
+    } else if (arg == "--no-switch-lights") {
+      SwitchLights = false;
     } else if (arg == "--log-beats") {
       if (++i == argc) {
         fprintf(stderr, "%s: missing argument to: %s\n", argv[0], arg.c_str());
