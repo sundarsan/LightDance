@@ -36,6 +36,9 @@ public:
   virtual double GetRecentBPM() const = 0;
   
   virtual std::string GetProgramName() const = 0;
+
+  virtual bool GetStrobeEnabled() const = 0;
+  virtual void SetStrobeEnabled(bool Value) = 0;
 };
 
 LightManager *CreateLightManager(LightController *Controller,

@@ -23,6 +23,7 @@ namespace {
 
     double RecentBeatTimes[64];
     unsigned RecentBeatPosition, NumRecentBeatTimes;
+    bool StrobeEnabled;
 
   protected:
     virtual LightController &GetController() const {
@@ -41,7 +42,8 @@ namespace {
         ChangeProgramRequested(false),
         RecentBeatTimes(),
         RecentBeatPosition(0),
-        NumRecentBeatTimes(sizeof(RecentBeatTimes) / sizeof(RecentBeatTimes[0]))
+        NumRecentBeatTimes(sizeof(RecentBeatTimes)/sizeof(RecentBeatTimes[0])),
+        StrobeEnabled(true)
     {
       // Load the list of all programs.
       std::vector<LightProgram *> AllPrograms;
@@ -87,8 +89,16 @@ namespace {
 
     virtual void SetLight(unsigned Index, bool Enable) {
       assert(Index < LightStates.size() && "Invalid index");
-      Controller->SetLight(LightSetup[Index].Index, Enable);
 
+      const LightInfo &Info = LightSetup[Index];
+
+      // Honor the strobe disable flag.
+      if (Info.isStrobe() && !StrobeEnabled)
+        Enable = false;
+
+      Controller->SetLight(Info.Index, Enable);
+
+      // Update the light tracking state.
       LightState &State = LightStates[Index];
       if (Enable != State.Enabled) {
         double Elapsed = get_elapsed_time_in_seconds();
@@ -158,6 +168,12 @@ namespace {
       if (ActiveProgram)
         return ActiveProgram->GetName();
       return "(no active program)";
+    }
+
+    virtual bool GetStrobeEnabled() const { return StrobeEnabled; }
+
+    virtual void SetStrobeEnabled(bool Value) {
+      StrobeEnabled = Value;
     }
   };
 

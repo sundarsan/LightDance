@@ -33,6 +33,9 @@ class GLUTSimLightController : public SimLightController {
     } else if (key == 'n' || key == 'N') {
       if (light_manager)
         light_manager->ChangePrograms();
+    } else if (key == 's' || key == 'S') {
+      if (light_manager)
+        light_manager->SetStrobeEnabled(!light_manager->GetStrobeEnabled());
     }
   }
 
@@ -207,6 +210,13 @@ void GLUTSimLightController::draw() {
 
   if (light_manager) {
     sprintf(buffer, "Program: %s\n", light_manager->GetProgramName().c_str());
+    glColor3f(1, 1, 1);
+    glutDrawString(10, 10 + textHeight*y++, buffer);
+  }
+
+  if (light_manager) {
+    sprintf(buffer, "Strobe Enabled: %s\n",
+            light_manager->GetStrobeEnabled() ? "yes" : "no");
     glColor3f(1, 1, 1);
     glutDrawString(10, 10 + textHeight*y++, buffer);
   }
