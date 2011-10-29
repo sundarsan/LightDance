@@ -166,7 +166,7 @@ namespace {
   public:
     LightProgramImpl(std::string Name_, double MaxProgramTime_,
                      std::vector<ChannelProgram *> ChannelPrograms_,
-                     double ShortestBeatInterval_ = 0.05,
+                     double ShortestBeatInterval_ = 0.03,
                      double MaxBPM_ = -1,
                      double Rating_ = 1.0)
       : ActiveManager(0),
@@ -728,7 +728,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
   Programs.push_back(P0);
   Programs.push_back(P1);
   Result.push_back(new LightProgramImpl("stable with flicker", MaxProgramTime,
-                                        Programs, 0.05, 200));
+                                        Programs, 0.05, 200, .5));
 
   // Very slow patterns (early).
 
@@ -742,7 +742,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
     Programs.push_back(P0);
     Programs.push_back(P1);
     Result.push_back(new LightProgramImpl("static: mono", MaxProgramTime,
-                                          Programs, 0.05, 200));
+                                          Programs, 0.05, 200, .2));
   }
 
   if (true) {
@@ -755,7 +755,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
     Programs.push_back(P0);
     Programs.push_back(P1);
     Result.push_back(new LightProgramImpl("static: dual", MaxProgramTime,
-                                          Programs, 0.05, 200));
+                                          Programs, 0.05, 200, .2));
   }
 
   if (true) {
@@ -775,7 +775,7 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
     Programs.push_back(P0);
     Programs.push_back(P1);
     Result.push_back(new LightProgramImpl("vs: alternating", MaxProgramTime,
-                                          Programs, 0.05, 200));
+                                          Programs, 0.05, 200, .2));
   }
 
   if (true) {
@@ -799,6 +799,6 @@ void LightProgram::LoadAllPrograms(std::vector<LightProgram *> &Result) {
     Programs.push_back(P0);
     Programs.push_back(P1);
     Result.push_back(new LightProgramImpl("vs: alternating (2)", MaxProgramTime,
-                                          Programs, 0.05, 200));
+                                          Programs, 0.05, 200, .2));
   }
 }
