@@ -6,19 +6,19 @@ CPPFLAGS := \
 	-I/Library/Frameworks/Phidget21.framework/Headers \
 	-I/opt/local/include \
 
-MICROPHONE_OBJS := microphone-monitor.o \
+MICROPHONE_OBJS := main.o \
 	AudioMonitor.o MusicMonitor.o LightController.o \
 	LightManager.o LightProgram.o \
 	SimLightController.o Util.o
 
-all: light-switcher microphone-monitor
+all: light-switcher LightDance
 
 light-switcher: light-switcher.o
 	clang \
 	   \
 	  -framework Phidget21  -o $@ $<
 
-microphone-monitor: $(MICROPHONE_OBJS)
+LightDance: $(MICROPHONE_OBJS)
 	clang++ \
 	  -g -O2 -framework AudioUnit  -o $@ $(MICROPHONE_OBJS) \
 	  -Wno-deprecated-declarations \
@@ -32,3 +32,6 @@ microphone-monitor: $(MICROPHONE_OBJS)
 
 %.o: %.c Makefile
 	$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS)
+
+clean:
+	rm -f *.o LightDance light-switcher
